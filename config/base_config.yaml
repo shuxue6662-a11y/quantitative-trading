@@ -1,0 +1,50 @@
+# ====================================================================
+# 量化交易系统 - 基础配置
+# ====================================================================
+
+project:
+  name: "Quantitative Trading System"
+  version: "0.1.0"
+  author: "Your Name"
+  description: "A股量化交易系统（学生版）"
+
+# 运行模式
+mode:
+  debug: true
+  enable_llm: true
+  enable_sentiment: true
+  enable_notification: true
+  enable_real_crawler: true  # 新增：启用真实爬虫（需要配置MediaCrawler）
+
+# 路径配置
+paths:
+  root_dir: "."
+  data_dir: "./data"
+  database_dir: "./database"
+  log_dir: "./logs"
+  config_dir: "./config"
+  external_dir: "./external"
+
+# 数据库配置
+database:
+  type: "sqlite"
+  market_db: "database/market_data.db"
+  sentiment_db: "database/sentiment_data.db"
+  factor_db: "database/factor_data.db"
+  backtest_db: "database/backtest_results.db"
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "[%(asctime)s] [%(levelname)s] %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
+  save_to_file: true
+  max_file_size: 10485760  # 10MB
+  backup_count: 5
+
+# 数据更新时间
+schedule:
+  market_data_update: "15:30"
+  sentiment_crawl: "19:30"
+  signal_generation: "20:30"
+  daily_report: "21:00"

@@ -1,0 +1,43 @@
+# ====================================================================
+# 数据源配置
+# ====================================================================
+
+# 数据源优先级（按顺序尝试）
+priority:
+  - akshare      # 首选：AKShare
+  - baostock     # 备选1：BaoStock
+  - tushare      # 备选2：Tushare（需要token）
+
+# AKShare配置
+akshare:
+  enabled: true
+  timeout: 15
+  retry_times: 2      # 减少重试次数，快速切换到下一个源
+  retry_delay: 3
+
+# BaoStock配置（稳定性高的备选方案）
+baostock:
+  enabled: true
+  timeout: 30
+  retry_times: 3
+  retry_delay: 3
+
+# Tushare配置（可选，需要token）
+tushare:
+  enabled: true       # 如果有token可以启用
+  token: ""            # 在 secrets.yaml 中配置
+  timeout: 30
+  retry_times: 3
+  daily_limit: 500
+
+# 健康检查
+health_check:
+  enable: true
+  max_failures: 3      # 连续失败3次标记为不健康
+  reset_interval: 3600 # 1小时后重置健康状态
+
+# 缓存配置
+cache:
+  enable: true
+  expire_days: 1
+  max_size_mb: 500

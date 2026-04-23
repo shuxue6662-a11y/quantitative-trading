@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        .section {
+            padding: 20px 30px;
+            border-bottom: 1px solid #eee;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .stock-card {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .stock-card.strong-buy {
+            border-left-color: #28a745;
+            background-color: #f0fff4;
+        }
+        .stock-card.buy {
+            border-left-color: #17a2b8;
+            background-color: #f0f9ff;
+        }
+        .stock-card.hold {
+            border-left-color: #ffc107;
+            background-color: #fffbf0;
+        }
+        .stock-card.avoid {
+            border-left-color: #dc3545;
+            background-color: #fff5f5;
+        }
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .stock-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .stock-action {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .action-strong-buy {
+            background-color: #28a745;
+            color: white;
+        }
+        .action-buy {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .action-hold {
+            background-color: #ffc107;
+            color: #333;
+        }
+        .action-avoid {
+            background-color: #dc3545;
+            color: white;
+        }
+        .stock-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .info-item {
+            color: #666;
+        }
+        .info-label {
+            color: #999;
+            font-size: 12px;
+        }
+        .reasons {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+        .reason-item {
+            padding: 5px 0;
+            color: #555;
+            font-size: 14px;
+        }
+        .risk-item {
+            padding: 5px 0;
+            color: #dc3545;
+            font-size: 14px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>📊 量化交易日报</h1>
+            <p>{{ date }} | 智能分析系统</p>
+        </div>
+        
+        <!-- 摘要统计 -->
+        <div class="section">
+            <div class="section-title">📈 今日概览</div>
+            <div class="summary-stats">
+                <div class="stat-box">
+                    <div class="stat-value">{{ total_stocks }}</div>
+                    <div class="stat-label">分析股票</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" style="color: #28a745;">{{ buy_count }}</div>
+                    <div class="stat-label">买入信号</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" style="color: #ffc107;">{{ hold_count }}</div>
+                    <div class="stat-label">观望</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" style="color: #dc3545;">{{ avoid_count }}</div>
+                    <div class="stat-label">回避</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 强烈买入 -->
+        {% if strong_buy_stocks %}
+        <div class="section">
+            <div class="section-title">🟢🟢 强烈买入 ({{ strong_buy_stocks|length }}只)</div>
+            {% for stock in strong_buy_stocks %}
+            <div class="stock-card strong-buy">
+                <div class="stock-header">
+                    <div class="stock-name">{{ stock.stock_name }} ({{ stock.stock_code }})</div>
+                    <div class="stock-action action-strong-buy">强烈买入</div>
+                </div>
+                <div class="stock-info">
+                    <div class="info-item">
+                        <div class="info-label">最新价</div>
+                        <div>¥{{ "%.2f"|format(stock.price) }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">综合评分</div>
+                        <div>{{ "%.0f"|format(stock.total_score) }}/100</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">情绪分数</div>
+                        <div>{{ "%.2f"|format(stock.sentiment) }}</div>
+                    </div>
+                </div>
+                <div class="reasons">
+                    {% for reason in stock.reasons %}
+                    <div class="reason-item">✓ {{ reason }}</div>
+                    {% endfor %}
+                    {% for risk in stock.risks %}
+                    <div class="risk-item">{{ risk }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- 买入 -->
+        {% if buy_stocks %}
+        <div class="section">
+            <div class="section-title">🟢 买入 ({{ buy_stocks|length }}只)</div>
+            {% for stock in buy_stocks %}
+            <div class="stock-card buy">
+                <div class="stock-header">
+                    <div class="stock-name">{{ stock.stock_name }} ({{ stock.stock_code }})</div>
+                    <div class="stock-action action-buy">买入</div>
+                </div>
+                <div class="stock-info">
+                    <div class="info-item">
+                        <div class="info-label">最新价</div>
+                        <div>¥{{ "%.2f"|format(stock.price) }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">综合评分</div>
+                        <div>{{ "%.0f"|format(stock.total_score) }}/100</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">情绪</div>
+                        <div>{{ "%.2f"|format(stock.sentiment) }}</div>
+                    </div>
+                </div>
+                <div class="reasons">
+                    {% for reason in stock.reasons[:3] %}
+                    <div class="reason-item">✓ {{ reason }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- 观望 -->
+        {% if hold_stocks %}
+        <div class="section">
+            <div class="section-title">🟡 观望 ({{ hold_stocks|length }}只)</div>
+            {% for stock in hold_stocks[:5] %}
+            <div class="stock-card hold">
+                <div class="stock-header">
+                    <div class="stock-name">{{ stock.stock_name }}</div>
+                    <div class="stock-action action-hold">观望</div>
+                </div>
+                <div class="stock-info">
+                    <div class="info-item">¥{{ "%.2f"|format(stock.price) }}</div>
+                    <div class="info-item">评分: {{ "%.0f"|format(stock.total_score) }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- 页脚 -->
+        <div class="footer">
+            <p>本报告由AI量化系统自动生成 | 仅供参考，投资有风险</p>
+            <p>数据更新时间: {{ date }}</p>
+        </div>
+    </div>
+</body>
+</html>

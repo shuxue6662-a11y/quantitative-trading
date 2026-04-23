@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# 数据库
+*.db
+*.sqlite
+*.sqlite3
+
+# 数据文件
+data/raw/
+data/processed/
+data/exports/
+*.csv
+*.xlsx
+
+# 日志
+logs/
+*.log
+
+# 敏感信息
+config/secrets.yaml
+.env
+
+# MediaCrawler
+external/MediaCrawler/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Jupyter
+.ipynb_checkpoints/
+
+# 测试
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 临时文件
+tmp/
+temp/
+*.tmp

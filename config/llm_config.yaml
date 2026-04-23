@@ -1,0 +1,39 @@
+# ====================================================================
+# LLM配置（Ollama本地大模型）
+# ====================================================================
+
+ollama:
+  base_url: "http://localhost:11434"
+  timeout: 180  # 从60改为180秒（3分钟）
+  
+  # 模型配置
+  models:
+    code_generator:
+      name: "deepseek-coder:6.7b"
+      temperature: 0.3
+      top_p: 0.9
+      max_tokens: 2000
+      
+    sentiment_analyzer:
+      name: "qwen2.5:7b"
+      temperature: 0.1
+      top_p: 0.8
+      max_tokens: 500
+      think: false  # 新增：禁用深度思考
+      
+    report_writer:
+      name: "qwen2.5:7b"
+      temperature: 0.7
+      top_p: 0.9
+      max_tokens: 1500
+      think: false  # 新增：禁用深度思考
+
+# 缓存配置
+cache:
+  enable: true
+  expire_hours: 24
+  
+# 批处理配置
+batch:
+  max_batch_size: 50
+  parallel: false
