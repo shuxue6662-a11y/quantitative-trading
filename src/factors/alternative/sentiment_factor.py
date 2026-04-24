@@ -49,25 +49,38 @@ class SentimentFactor:
         # 因子1: 情绪分数
         df['Sentiment'] = df['AvgSentiment']
         
-        # 因子2: 情绪变化率（3日）
+        # 因子2: 情绪变化率（多周期）
+        df['SentimentChange1D'] = df['AvgSentiment'].pct_change(1) * 100  # 新增
         df['SentimentChange3D'] = df['AvgSentiment'].pct_change(3) * 100
+        df['SentimentChange7D'] = df['AvgSentiment'].pct_change(7) * 100  # 新增
         
         # 因子3: 情绪分歧度（标准差）
         df['SentimentDivergence'] = df['SentimentStd']
         
-        # 因子4: 情绪趋势（5日均线斜率）
-        df['SentimentTrend'] = df['AvgSentiment'].rolling(5).apply(
+        # 因子4: 情绪趋势（多周期）
+        df['SentimentTrend5D'] = df['AvgSentiment'].rolling(5).apply(
             lambda x: np.polyfit(range(len(x)), x, 1)[0] if len(x) == 5 else 0
         )
+        df['SentimentTrend10D'] = df['AvgSentiment'].rolling(10).apply(  # 新增
+            lambda x: np.polyfit(range(len(x)), x, 1)[0] if len(x) == 10 else 0
+        )
         
-        # 因子5: 热度指数（标准化）
+        # 因子5: 热度指标
         df['HeatIndexNorm'] = (
             (df['HeatIndex'] - df['HeatIndex'].rolling(20).mean()) /
             df['HeatIndex'].rolling(20).std()
         )
         
-        # 因子6: 正负比（正面占比 - 负面占比）
+        # 因子6: 正负比
         df['SentimentBalance'] = df['PositiveRatio'] - df['NegativeRatio']
+        
+        # 🔥 新增因子7: 情绪动量（类似MACD）
+        df['SentimentEMA12'] = df['AvgSentiment'].ewm(span=12).mean()
+        df['SentimentEMA26'] = df['AvgSentiment'].ewm(span=26).mean()
+        df['SentimentMACD'] = df['SentimentEMA12'] - df['SentimentEMA26']
+        
+        # 🔥 新增因子8: 讨论量变化率
+        df['TotalCountChange'] = df['TotalCount'].pct_change(1) * 100
         
         return df
     
@@ -82,9 +95,13 @@ class SentimentFactor:
                 'heat': str
             }
         """
+
+        logger.debug(f"查询 {stock_code} 的情绪数据...")
+
         df = self.calculate(stock_code, days=7)
         
         if df.empty:
+            logger.warning(f"{stock_code} 无情绪数据")  # 这里触发了
             return {
                 'sentiment': 0.5,
                 'trend': 'unknown',

@@ -98,12 +98,32 @@ class QuantSystem:
                     logger.warning(f"  {name} 数据为空，跳过")
                     continue
                 
-                # 计算指标
+                # 🔥 计算所有指标
+                from src.factors.technical import (
+                    calculate_ma, calculate_macd, calculate_rsi,
+                    calculate_bollinger_bands, calculate_atr, calculate_volatility,
+                    calculate_kdj, calculate_williams_r, calculate_cci,
+                    calculate_obv, calculate_vwap, calculate_mfi,
+                    calculate_price_momentum, calculate_price_position, calculate_gap
+                )
+                
                 df = calculate_ma(df)
                 df = calculate_macd(df)
                 df = calculate_rsi(df)
                 df = calculate_bollinger_bands(df)
                 df = calculate_atr(df)
+                df = calculate_volatility(df)
+                
+                # 新增指标
+                df = calculate_kdj(df)
+                df = calculate_williams_r(df)
+                df = calculate_cci(df)
+                df = calculate_obv(df)
+                df = calculate_vwap(df)
+                df = calculate_mfi(df)
+                df = calculate_price_momentum(df)
+                df = calculate_price_position(df)
+                df = calculate_gap(df)
                 
                 # 保存
                 self.market_db.save_daily_data(df, code, name)
@@ -128,6 +148,10 @@ class QuantSystem:
                 # 爬取（当前是模拟数据）
                 texts = self.crawler.crawl_weibo_stock(code, name, limit=20)
                 
+                if not texts:
+                    logger.warning(f"  {name} 无数据，跳过")
+                    continue
+                
                 # 保存原始文本
                 text_ids = []
                 for item in texts:
@@ -147,26 +171,60 @@ class QuantSystem:
                     if text_id:
                         text_ids.append((text_id, item['text']))
                 
+                logger.info(f"  保存了 {len(text_ids)} 条新文本")
+                
+                # 🔥 检查：如果没有新文本，跳过LLM分析
+                if not text_ids:
+                    logger.warning(f"  {name} 无新文本需要分析")
+                    # 但仍然尝试计算每日汇总
+                    today = datetime.now().date()
+                    try:
+                        self.sentiment_db.calculate_daily_sentiment(code, today)
+                    except Exception as e:
+                        logger.error(f"  计算每日汇总失败: {e}")
+                    continue
+                
                 # LLM分析
-                for text_id, text_content in text_ids:
-                    result = self.analyzer.analyze(text_content)
-                    if result:
-                        self.sentiment_db.save_sentiment(
-                            text_id=text_id,
-                            stock_code=code,
-                            sentiment_score=result['sentiment_score'],
-                            confidence=result['confidence'],
-                            keywords=result['keywords']
-                        )
+                logger.info(f"  开始LLM分析 {len(text_ids)} 条...")
+                analyzed_count = 0
+                
+                for i, (text_id, text_content) in enumerate(text_ids, 1):
+                    try:
+                        logger.debug(f"  分析 {i}/{len(text_ids)}: {text_content[:30]}...")
+                        
+                        result = self.analyzer.analyze(text_content)
+                        
+                        if result:
+                            self.sentiment_db.save_sentiment(
+                                text_id=text_id,
+                                stock_code=code,
+                                sentiment_score=result['sentiment_score'],
+                                confidence=result['confidence'],
+                                keywords=result['keywords']
+                            )
+                            analyzed_count += 1
+                        else:
+                            logger.warning(f"  文本 {i} 分析失败")
+                            
+                    except Exception as e:
+                        logger.error(f"  文本 {i} 分析异常: {e}")
+                        continue  # 继续下一条
+                
+                logger.info(f"  LLM分析完成: {analyzed_count}/{len(text_ids)}")
                 
                 # 计算每日汇总
                 today = datetime.now().date()
-                self.sentiment_db.calculate_daily_sentiment(code, today)
-                
-                logger.info(f"  ✅ {name} 舆情分析完成")
+                try:
+                    self.sentiment_db.calculate_daily_sentiment(code, today)
+                    logger.info(f"  ✅ {name} 舆情分析完成")
+                except Exception as e:
+                    logger.error(f"  计算每日汇总失败: {e}")
                 
             except Exception as e:
                 logger.error(f"  ❌ {name} 舆情分析失败: {e}")
+                import traceback
+                traceback.print_exc()
+                continue  # 继续下一只股票
         
         logger.info("舆情数据爬取完成")
     

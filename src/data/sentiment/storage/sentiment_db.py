@@ -302,29 +302,31 @@ class SentimentDatabase:
         start_date: Optional[date] = None,
         end_date: Optional[date] = None
     ) -> pd.DataFrame:
-        """
-        获取每日情绪数据
-        
-        Returns:
-            DataFrame
-        """
+        """获取每日情绪数据"""
         session = self.Session()
         
         try:
+            logger.debug(f"查询数据库: {stock_code}, {start_date} ~ {end_date}")
+            
             query = session.query(DailySentiment).filter(
                 DailySentiment.stock_code == stock_code
             )
             
             if start_date:
-                query = query.filter(DailySentiment.trade_date >= start_date)
+                # 🔥 修复：确保日期类型一致
+                query = query.filter(DailySentiment.trade_date >= datetime.combine(start_date, datetime.min.time()))
             if end_date:
-                query = query.filter(DailySentiment.trade_date <= end_date)
+                query = query.filter(DailySentiment.trade_date <= datetime.combine(end_date, datetime.max.time()))
             
             query = query.order_by(DailySentiment.trade_date)
             records = query.all()
             
+            logger.debug(f"查询结果: {len(records)} 条")  # 添加调试
+            
             if not records:
+                logger.warning(f"数据库中无 {stock_code} 的情绪数据")
                 return pd.DataFrame()
+            
             
             data = []
             for r in records:

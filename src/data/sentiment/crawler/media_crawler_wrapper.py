@@ -59,16 +59,7 @@ class MediaCrawlerWrapper:
         return self._generate_mock_data(stock_name, limit)
     
     def _read_real_data(self, stock_name: str, limit: int) -> List[Dict]:
-        """
-        读取真实爬取的数据
-        
-        Args:
-            stock_name: 股票名称
-            limit: 数量限制
-            
-        Returns:
-            数据列表
-        """
+        """读取真实爬取的数据"""
         results = []
         
         try:
@@ -85,8 +76,12 @@ class MediaCrawlerWrapper:
                 reverse=True
             )
             
-            # 优先读取内容文件
-            for file in content_files[:1]:  # 只读最新的
+            if not content_files:
+                logger.warning(f"未找到数据文件")
+                return []
+            
+            # 读取内容文件
+            for file in content_files[:3]:
                 logger.info(f"读取文件: {file.name}")
                 
                 with open(file, 'r', encoding='utf-8') as f:
@@ -100,23 +95,29 @@ class MediaCrawlerWrapper:
                         try:
                             data = json.loads(line)
                             
-                            # 解析微博数据
-                            text = data.get('note_desc', data.get('content', ''))
+                            # 🔥 真实格式字段映射
+                            text = data.get('content', data.get('note_desc', ''))
                             
                             # 跳过空文本
                             if not text or len(text) < 10:
                                 continue
                             
-                            # 构建标准格式
+                            # 关键词过滤
+                            if stock_name not in text:
+                                short_name = stock_name.replace('股份', '').replace('集团', '').replace('科技', '')
+                                if short_name not in text:
+                                    continue
+                            
+                            # 🔥 构建标准格式（真实字段）
                             results.append({
                                 'text': text,
-                                'author': data.get('nickname', data.get('user', {}).get('nickname', '')),
-                                'followers': data.get('user', {}).get('followers_count', 0),
-                                'likes': int(data.get('liked_count', data.get('like_count', 0))),
-                                'comments': int(data.get('comments_count', data.get('comment_count', 0))),
-                                'shares': int(data.get('shared_count', data.get('share_count', 0))),
-                                'publish_time': self._parse_time(data.get('publish_time', data.get('time', ''))),
-                                'url': data.get('note_url', data.get('url', '')),
+                                'author': data.get('nickname', ''),
+                                'followers': 0,  # 需要从user对象获取
+                                'likes': int(data.get('liked_count', 0)),
+                                'comments': int(data.get('comments_count', 0)),
+                                'shares': int(data.get('shared_count', 0)),
+                                'publish_time': self._parse_time(data.get('create_time', '')),
+                                'url': data.get('note_url', ''),
                                 'platform': 'weibo'
                             })
                             
@@ -124,15 +125,18 @@ class MediaCrawlerWrapper:
                             logger.debug(f"  行 {line_num} 解析失败: {e}")
                             continue
                 
-                logger.info(f"  成功读取 {len(results)} 条内容数据")
+                logger.info(f"  过滤后保留 {len(results)} 条相关数据")
+                
+                if results:
+                    break
             
-            # 如果内容数据不足，补充评论数据
+            # 补充评论数据
             if len(results) < limit and comment_files:
                 logger.info("补充评论数据...")
                 
                 for file in comment_files[:1]:
                     with open(file, 'r', encoding='utf-8') as f:
-                        for line_num, line in enumerate(f, 1):
+                        for line in f:
                             if not line.strip():
                                 continue
                             
@@ -142,19 +146,26 @@ class MediaCrawlerWrapper:
                             try:
                                 data = json.loads(line)
                                 
-                                text = data.get('content', data.get('comment_content', ''))
+                                # 🔥 评论字段映射
+                                text = data.get('content', '')
                                 
                                 if not text or len(text) < 10:
                                     continue
                                 
+                                # 关键词过滤
+                                if stock_name not in text:
+                                    short_name = stock_name.replace('股份', '').replace('集团', '').replace('科技', '')
+                                    if short_name not in text:
+                                        continue
+                                
                                 results.append({
                                     'text': text,
-                                    'author': data.get('nickname', data.get('user_name', '')),
+                                    'author': data.get('nickname', ''),
                                     'followers': 0,
-                                    'likes': int(data.get('like_count', data.get('sub_comment_count', 0))),
+                                    'likes': int(data.get('comment_like_count', 0)),
                                     'comments': int(data.get('sub_comment_count', 0)),
                                     'shares': 0,
-                                    'publish_time': self._parse_time(data.get('create_time', data.get('time', ''))),
+                                    'publish_time': self._parse_time(data.get('create_time', '')),
                                     'url': '',
                                     'platform': 'weibo'
                                 })
@@ -163,11 +174,9 @@ class MediaCrawlerWrapper:
                                 continue
                     
                     logger.info(f"  补充 {len(results)} 条评论数据")
-        
+            
         except Exception as e:
             logger.error(f"读取真实数据失败: {e}")
-            import traceback
-            traceback.print_exc()
         
         return results[:limit]
     

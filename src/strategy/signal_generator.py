@@ -171,6 +171,44 @@ class SignalGenerator:
             score += 10
             signals.append("RSI偏高")
         
+        # 🔥 新增：KDJ判断（10分）
+        if 'K' in latest and 'D' in latest:
+            k = latest['K']
+            d = latest['D']
+            
+            if k > d:
+                score += 5
+                signals.append("KDJ多头")
+            
+            # KDJ金叉
+            if prev['K'] <= prev['D'] and k > d:
+                score += 5
+                signals.append("⭐KDJ金叉")
+            
+            # KDJ超买超卖
+            if k > 80 or d > 80:
+                score -= 3
+                signals.append("⚠️KDJ超买")
+        
+        # 🔥 新增：OBV判断（5分）
+        if 'OBV_MA5' in latest and 'OBV_MA10' in latest:
+            if latest['OBV_MA5'] > latest['OBV_MA10']:
+                score += 5
+                signals.append("OBV多头")
+        
+        # 🔥 新增：CCI判断（5分）
+        if 'CCI' in latest:
+            cci = latest['CCI']
+            if -100 < cci < 100:
+                score += 3
+                signals.append("CCI正常")
+            elif cci > 100:
+                score += 5
+                signals.append("CCI强势")
+            elif cci < -100:
+                score -= 5
+                signals.append("⚠️CCI弱势")
+        
         return score, signals
     
     def _calculate_sentiment_score(self, sentiment_info: Dict) -> Tuple[float, list]:
