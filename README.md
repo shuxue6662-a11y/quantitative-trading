@@ -1,4 +1,4 @@
-# 📊 Quantitative Trading System
+# 📊 Quantitative Trading System（README暂未编写完成）
 
 > 基于本地大模型的A股量化交易系统（学生个人版）
 
